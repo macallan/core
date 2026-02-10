@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+begin
+  require 'bundler/setup'
+rescue LoadError, Bundler::GemNotFound
+  # Gems unavailable — UI will degrade to plain text
+end
+require_relative '../lib/core/cli'
+
+Core::CLI.new(ARGV).run

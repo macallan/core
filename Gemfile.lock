@@ -1,0 +1,33 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    pastel (0.8.0)
+      tty-color (~> 0.5)
+    tty-color (0.6.0)
+    tty-cursor (0.7.1)
+    tty-prompt (0.23.1)
+      pastel (~> 0.8)
+      tty-reader (~> 0.8)
+    tty-reader (0.9.0)
+      tty-cursor (~> 0.7)
+      tty-screen (~> 0.8)
+      wisper (~> 2.0)
+    tty-screen (0.8.2)
+    tty-spinner (0.9.3)
+      tty-cursor (~> 0.7)
+    wisper (2.0.1)
+
+PLATFORMS
+  arm64-darwin-25
+  ruby
+
+DEPENDENCIES
+  pastel (~> 0.8)
+  tty-prompt (~> 0.23)
+  tty-spinner (~> 0.9)
+
+RUBY VERSION
+   ruby 3.4.3p32
+
+BUNDLED WITH
+   2.6.7
