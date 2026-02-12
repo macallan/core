@@ -50,7 +50,8 @@ module Core
             UI.say_ok("Generated context file: #{context_file}")
           end
 
-          tmux_created = handle_tmux_window_creation(result[:path], "R-#{pr_number}")
+          pr_title = result[:pr_data]&.dig('title') || client.pr(repo, pr_number)&.dig('title')
+          tmux_created = handle_tmux_window_creation(result[:path], pr_number, pr_title: pr_title)
           puts "cd #{result[:path]}" unless tmux_created
 
         rescue WorktreeManager::WorktreeError => e

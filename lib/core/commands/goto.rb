@@ -44,7 +44,9 @@ module Core
           end
         end
 
-        tmux_created = handle_tmux_window_creation(path, "R-#{pr_number}")
+        goto_repo = repo || selected&.dig('repo')
+        pr_title = goto_repo ? client.pr(goto_repo, pr_number)&.dig('title') : nil
+        tmux_created = handle_tmux_window_creation(path, pr_number, pr_title: pr_title)
         puts "cd #{path}" unless tmux_created
       end
     end
