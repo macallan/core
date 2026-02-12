@@ -136,6 +136,59 @@ module Core
       end
     end
 
+    def create_for_work(repo, branch_name, base_branch: nil)
+      main_repo_path = detect_main_repo_path
+
+      # Detect default branch if not specified
+      base_branch ||= detect_default_branch(main_repo_path)
+
+      # Check if worktree already exists in config
+      existing = find_work_worktree(repo, branch_name)
+      if existing && worktree_exists?(existing[:path])
+        return { exists: true, path: existing[:path], branch: branch_name }
+      end
+
+      # Prune stale worktrees and check if branch already has a worktree
+      prune_stale_worktrees(main_repo_path)
+      existing_git_wt = find_existing_git_worktree(main_repo_path, branch_name)
+      if existing_git_wt
+        save_work_worktree_state(repo, branch_name, existing_git_wt)
+        return { exists: true, path: existing_git_wt, branch: branch_name }
+      end
+
+      # Check for custom worktree script
+      custom_script = @config.dig('worktree_scripts', repo)
+
+      if custom_script && File.exist?(File.expand_path(custom_script))
+        worktree_path = create_worktree_with_script(custom_script, branch_name, nil)
+      else
+        worktree_path = determine_work_worktree_path(main_repo_path, branch_name)
+
+        if worktree_exists?(worktree_path)
+          return { exists: true, path: worktree_path, branch: branch_name }
+        end
+
+        # Fetch latest base branch
+        fetch_remote(main_repo_path, base_branch)
+
+        # Create worktree with new branch from base
+        create_work_worktree(main_repo_path, worktree_path, branch_name, base_branch)
+      end
+
+      save_work_worktree_state(repo, branch_name, worktree_path)
+
+      { exists: false, path: worktree_path, branch: branch_name }
+    end
+
+    def find_work_worktree(repo, branch_name)
+      return nil unless @config['work_worktrees'] && @config['work_worktrees'][repo]
+
+      wt = @config['work_worktrees'][repo].find { |w| w['branch'] == branch_name }
+      return nil unless wt
+
+      { branch: wt['branch'], path: wt['path'], created_at: wt['created_at'] }
+    end
+
     def goto(repo, pr_number)
       worktree_info = find_worktree(repo, pr_number)
       return nil unless worktree_info
@@ -314,6 +367,69 @@ module Core
 
       @config['worktrees'][repo].reject! { |w| w['pr_number'] == pr_number }
       @config['worktrees'].delete(repo) if @config['worktrees'][repo].empty?
+
+      Config.save(@config)
+    end
+
+    def detect_default_branch(repo_path)
+      Dir.chdir(repo_path) do
+        # Try symbolic-ref first (most reliable)
+        stdout, status = Open3.capture2('git', 'symbolic-ref', 'refs/remotes/origin/HEAD')
+        if status.success?
+          return stdout.strip.sub('refs/remotes/origin/', '')
+        end
+
+        # Fallback: check if main or master exists on remote
+        _, status = Open3.capture2('git', 'rev-parse', '--verify', 'origin/main')
+        return 'main' if status.success?
+
+        _, status = Open3.capture2('git', 'rev-parse', '--verify', 'origin/master')
+        return 'master' if status.success?
+
+        raise WorktreeError, "Could not detect default branch. Specify with --base"
+      end
+    end
+
+    def determine_work_worktree_path(repo_path, branch_name)
+      repo_name = File.basename(repo_path)
+      parent_dir = File.dirname(repo_path)
+      safe_branch = branch_name.gsub('/', '-')
+      File.join(parent_dir, "#{repo_name}-#{safe_branch}")
+    end
+
+    def create_work_worktree(repo_path, worktree_path, branch_name, base_branch)
+      $stderr.puts "  Creating worktree at #{File.basename(worktree_path)}..."
+      Dir.chdir(repo_path) do
+        # Check if branch already exists locally
+        _, status = Open3.capture2('git', 'rev-parse', '--verify', branch_name)
+
+        if status.success?
+          # Branch exists - create worktree for existing branch
+          cmd = ['git', 'worktree', 'add', worktree_path, branch_name]
+        else
+          # New branch from base
+          cmd = ['git', 'worktree', 'add', '-b', branch_name, worktree_path, "origin/#{base_branch}"]
+        end
+
+        stdout, stderr, status = Open3.capture3(*cmd)
+        unless status.success?
+          raise WorktreeError, "Failed to create worktree: #{stderr}"
+        end
+      end
+    end
+
+    def save_work_worktree_state(repo, branch_name, path)
+      @config['work_worktrees'] ||= {}
+      @config['work_worktrees'][repo] ||= []
+
+      existing = @config['work_worktrees'][repo].find { |w| w['branch'] == branch_name }
+      return if existing
+
+      @config['work_worktrees'][repo] << {
+        'branch' => branch_name,
+        'path' => path,
+        'created_at' => Time.now.iso8601
+      }
 
       Config.save(@config)
     end

@@ -167,7 +167,8 @@ module Core
       def main_menu
         prompt.select('What would you like to do?', per_page: 12) do |menu|
           menu.choice 'List PRs',           :list_prs
-          menu.choice 'Start Review',       :start_review
+          menu.choice 'Start Work',        :start_work
+          menu.choice 'Start Review',      :start_review
           menu.choice 'Finish Review',      :finish_review
           menu.choice 'Generate Context',   :context
           menu.choice 'Goto Worktree',      :goto

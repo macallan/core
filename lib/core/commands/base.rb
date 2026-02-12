@@ -31,7 +31,7 @@ module Core
         end
       end
 
-      def handle_tmux_window_creation(worktree_path, pr_number)
+      def handle_tmux_window_creation(worktree_path, label)
         require_relative '../tmux_manager'
 
         repo = determine_repo_from_args_or_prompt
@@ -40,7 +40,7 @@ module Core
         return false unless tmux.in_tmux?
 
         begin
-          result = tmux.create_window(worktree_path, "R-#{pr_number}")
+          result = tmux.create_window(worktree_path, label)
 
           if @options[:debug]
             UI.say_ok("Created tmux window '#{result[:window_name]}' in session '#{result[:session]}' with #{result[:panes]} panes (#{result[:split]} split)")

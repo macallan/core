@@ -16,6 +16,7 @@ require_relative 'commands/list_authors'
 require_relative 'commands/context'
 require_relative 'commands/list_contexts'
 require_relative 'commands/start_review'
+require_relative 'commands/start_work'
 require_relative 'commands/finish_review'
 require_relative 'commands/list_worktrees'
 require_relative 'commands/goto'
@@ -33,6 +34,7 @@ module Core
       'context'        => Commands::Context,
       'list-contexts'  => Commands::ListContexts,
       'start-review'   => Commands::StartReview,
+      'start-work'     => Commands::StartWork,
       'finish-review'  => Commands::FinishReview,
       'list-worktrees' => Commands::ListWorktrees,
       'goto'           => Commands::Goto,
@@ -94,6 +96,7 @@ module Core
         opts.separator "  PR context and review:"
         opts.separator "    context PR_NUMBER         Generate/update context file for a PR"
         opts.separator "    list-contexts [REPO]      List all saved PR contexts"
+        opts.separator "    start-work BRANCH_NAME    Create a worktree for new work on a branch"
         opts.separator "    start-review [PR_NUMBER]  Start reviewing a PR (interactive picker if no number given)"
         opts.separator "    finish-review [PR_NUMBER] Clean up worktree after finishing review (interactive picker if no number given)"
         opts.separator "    list-worktrees [REPO]     List active PR worktrees"
@@ -103,6 +106,10 @@ module Core
 
         opts.on("-r", "--refresh", "Ignore last_checked timestamp") do
           @options[:refresh] = true
+        end
+
+        opts.on("--base BRANCH", "Base branch for start-work (default: auto-detect)") do |branch|
+          @options[:base] = branch
         end
 
         opts.on("--repo REPO", "Specify repository for operations") do |repo|
@@ -128,6 +135,7 @@ module Core
 
         case choice
         when :list_prs       then Commands::List.new(args: [], options: @options).run
+        when :start_work     then interactive_start_work
         when :start_review   then interactive_start_review
         when :finish_review  then interactive_finish_review
         when :context        then interactive_context
@@ -145,6 +153,13 @@ module Core
     rescue Interrupt, TTY::Reader::InputInterrupt
       puts
       exit 0
+    end
+
+    def interactive_start_work
+      branch = UI.ask('Branch name:')
+      return unless branch && !branch.strip.empty?
+
+      Commands::StartWork.new(args: [branch], options: @options).run
     end
 
     def interactive_start_review

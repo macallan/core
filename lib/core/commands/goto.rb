@@ -44,7 +44,7 @@ module Core
           end
         end
 
-        tmux_created = handle_tmux_window_creation(path, pr_number)
+        tmux_created = handle_tmux_window_creation(path, "R-#{pr_number}")
         puts "cd #{path}" unless tmux_created
       end
     end
