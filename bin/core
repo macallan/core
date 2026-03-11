@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 begin
+  ENV['BUNDLE_GEMFILE'] = File.expand_path('../../Gemfile', File.realpath(__FILE__))
   require 'bundler/setup'
 rescue LoadError, Bundler::GemNotFound
   # Gems unavailable — UI will degrade to plain text

@@ -240,8 +240,6 @@ module Core
     end
 
     def create_worktree_with_script(script_path, branch_name, pr_number)
-      # Run custom script to create worktree
-      # Script usage: ~/bin/worktree.sh <branch-name>
       script_path = File.expand_path(script_path)
       $stderr.puts "  Running custom worktree script..."
 
@@ -405,10 +403,12 @@ module Core
 
         if status.success?
           # Branch exists - create worktree for existing branch
-          cmd = ['git', 'worktree', 'add', worktree_path, branch_name]
+          # Use --force in case branch is checked out elsewhere (e.g. main worktree)
+          cmd = ['git', 'worktree', 'add', '--force', worktree_path, branch_name]
         else
           # New branch from base
-          cmd = ['git', 'worktree', 'add', '-b', branch_name, worktree_path, "origin/#{base_branch}"]
+          # Use -B instead of -b to handle edge cases where branch already exists
+          cmd = ['git', 'worktree', 'add', '-B', branch_name, worktree_path, "origin/#{base_branch}"]
         end
 
         stdout, stderr, status = Open3.capture3(*cmd)
