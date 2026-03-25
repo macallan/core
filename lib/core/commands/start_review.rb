@@ -51,7 +51,8 @@ module Core
           end
 
           pr_title = result[:pr_data]&.dig('title') || client.pr(repo, pr_number)&.dig('title')
-          tmux_created = handle_tmux_window_creation(result[:path], pr_number, pr_title: pr_title)
+          window_name = build_window_name(pr_number, pr_title)
+          tmux_created = handle_tmux_window_creation(result[:path], window_name)
           puts "cd #{result[:path]}" unless tmux_created
 
         rescue WorktreeManager::WorktreeError => e

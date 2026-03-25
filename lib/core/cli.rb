@@ -16,10 +16,9 @@ require_relative 'commands/list_authors'
 require_relative 'commands/context'
 require_relative 'commands/list_contexts'
 require_relative 'commands/start_review'
-require_relative 'commands/start_work'
+require_relative 'commands/work'
 require_relative 'commands/finish_review'
-require_relative 'commands/list_worktrees'
-require_relative 'commands/goto'
+require_relative 'commands/rename'
 
 module Core
   class CLI
@@ -33,11 +32,10 @@ module Core
       'list-authors'   => Commands::ListAuthors,
       'context'        => Commands::Context,
       'list-contexts'  => Commands::ListContexts,
+      'work'           => Commands::Work,
       'start-review'   => Commands::StartReview,
-      'start-work'     => Commands::StartWork,
       'finish-review'  => Commands::FinishReview,
-      'list-worktrees' => Commands::ListWorktrees,
-      'goto'           => Commands::Goto,
+      'rename'         => Commands::Rename,
     }.freeze
 
     def initialize(args)
@@ -93,14 +91,13 @@ module Core
         opts.separator "    remove-author USERNAME    Remove an author from tracking"
         opts.separator "    list-authors              List all tracked authors"
         opts.separator ""
-        opts.separator "  PR context and review:"
-        opts.separator "    context PR_NUMBER         Generate/update context file for a PR"
-        opts.separator "    list-contexts [REPO]      List all saved PR contexts"
-        opts.separator "    start-work BRANCH_NAME    Create a worktree for new work on a branch"
+        opts.separator "  Work and review:"
+        opts.separator "    work BRANCH               Create/switch to worktree + tmux window for a branch"
         opts.separator "    start-review [PR_NUMBER]  Start reviewing a PR (interactive picker if no number given)"
         opts.separator "    finish-review [PR_NUMBER] Clean up worktree after finishing review (interactive picker if no number given)"
-        opts.separator "    list-worktrees [REPO]     List active PR worktrees"
-        opts.separator "    goto [PR_NUMBER]          Go to a PR worktree (interactive picker if no number given)"
+        opts.separator "    rename NEW_NAME            Rename the current tmux window"
+        opts.separator "    context PR_NUMBER         Generate/update context file for a PR"
+        opts.separator "    list-contexts [REPO]      List all saved PR contexts"
         opts.separator ""
         opts.separator "Options:"
 
@@ -108,7 +105,7 @@ module Core
           @options[:refresh] = true
         end
 
-        opts.on("--base BRANCH", "Base branch for start-work (default: auto-detect)") do |branch|
+        opts.on("--base BRANCH", "Base branch for work command (default: auto-detect)") do |branch|
           @options[:base] = branch
         end
 
@@ -135,12 +132,11 @@ module Core
 
         case choice
         when :list_prs       then Commands::List.new(args: [], options: @options).run
-        when :start_work     then interactive_start_work
+        when :work           then interactive_work
         when :start_review   then interactive_start_review
         when :finish_review  then interactive_finish_review
+        when :rename         then interactive_rename
         when :context        then interactive_context
-        when :goto           then interactive_goto
-        when :list_worktrees then Commands::ListWorktrees.new(args: [], options: @options).run
         when :list_contexts  then Commands::ListContexts.new(args: [], options: @options).run
         when :manage_repos   then interactive_manage_repos
         when :manage_authors then interactive_manage_authors
@@ -155,11 +151,11 @@ module Core
       exit 0
     end
 
-    def interactive_start_work
+    def interactive_work
       branch = UI.ask('Branch name:')
       return unless branch && !branch.strip.empty?
 
-      Commands::StartWork.new(args: [branch], options: @options).run
+      Commands::Work.new(args: [branch], options: @options).run
     end
 
     def interactive_start_review
@@ -177,8 +173,11 @@ module Core
       Commands::Context.new(args: [pr.to_s], options: @options).run
     end
 
-    def interactive_goto
-      Commands::Goto.new(args: [], options: @options).run
+    def interactive_rename
+      new_name = UI.ask('New window name:')
+      return unless new_name && !new_name.strip.empty?
+
+      Commands::Rename.new(args: [new_name], options: @options).run
     end
 
     def interactive_manage_repos

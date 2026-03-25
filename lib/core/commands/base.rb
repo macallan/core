@@ -39,7 +39,7 @@ module Core
         end
       end
 
-      def handle_tmux_window_creation(worktree_path, pr_number, pr_title: nil)
+      def handle_tmux_window_creation(worktree_path, window_name)
         require_relative '../tmux_manager'
 
         repo = determine_repo_from_args_or_prompt
@@ -47,9 +47,15 @@ module Core
 
         return false unless tmux.in_tmux?
 
-        window_name = build_window_name(pr_number, pr_title)
-
         begin
+          # Check for existing window first
+          existing_index = tmux.find_window(window_name)
+          if existing_index
+            tmux.switch_to_window(existing_index)
+            UI.say_ok("Switched to existing tmux window '#{window_name}'") if @options[:debug]
+            return true
+          end
+
           result = tmux.create_window(worktree_path, window_name)
 
           if @options[:debug]

@@ -14,6 +14,44 @@ module Core
       !ENV['TMUX'].nil? && !ENV['TMUX'].empty?
     end
 
+    # Find an existing tmux window by name
+    # @return [Integer, nil] window index if found, nil otherwise
+    def find_window(window_name)
+      return nil unless in_tmux?
+
+      stdout, stderr, status = Open3.capture3(
+        'tmux', 'list-windows', '-F', '#{window_name}:#{window_index}'
+      )
+      return nil unless status.success?
+
+      stdout.each_line do |line|
+        name, index = line.strip.split(':', 2)
+        return index.to_i if name == window_name
+      end
+
+      nil
+    end
+
+    # Switch to an existing tmux window by index
+    def switch_to_window(index)
+      raise TmuxError, "Not running inside a tmux session" unless in_tmux?
+
+      stdout, stderr, status = Open3.capture3('tmux', 'select-window', '-t', ":#{index}")
+      raise TmuxError, "Failed to switch window: #{stderr.strip}" unless status.success?
+
+      true
+    end
+
+    # Rename a tmux window
+    def rename_window(target, new_name)
+      raise TmuxError, "Not running inside a tmux session" unless in_tmux?
+
+      stdout, stderr, status = Open3.capture3('tmux', 'rename-window', '-t', ":#{target}", new_name)
+      raise TmuxError, "Failed to rename window: #{stderr.strip}" unless status.success?
+
+      true
+    end
+
     # Create a new tmux window in the current session
     # @param directory_path [String] The directory to open in the new window
     # @param window_name [String] The name for the new window (default: 'review')

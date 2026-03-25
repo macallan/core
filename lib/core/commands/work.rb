@@ -1,6 +1,6 @@
 module Core
   module Commands
-    class StartWork < Base
+    class Work < Base
       def run
         branch_name = @args.shift
 
@@ -11,7 +11,7 @@ module Core
 
           unless branch_name && !branch_name.strip.empty?
             UI.say_error("Missing branch name argument")
-            puts "Usage: core start-work BRANCH_NAME [--repo owner/repo] [--base BASE_BRANCH]"
+            puts "Usage: core work BRANCH [--repo owner/repo] [--base BASE_BRANCH]"
             exit 1
           end
         end
@@ -29,10 +29,8 @@ module Core
 
         manager = WorktreeManager.new(client)
 
-        UI.say_status("Starting worktree for #{branch_name} in #{repo}...")
-
         begin
-          result = UI.spin("Creating worktree for #{branch_name}") do
+          result = UI.spin("Setting up worktree for #{branch_name}") do
             manager.create_for_work(repo, branch_name, base_branch: base_branch)
           end
 
@@ -42,7 +40,8 @@ module Core
             UI.say_ok("Created worktree at: #{result[:path]}")
           end
 
-          tmux_created = handle_tmux_window_creation(result[:path], branch_name)
+          window_name = branch_name.gsub('/', '-')
+          tmux_created = handle_tmux_window_creation(result[:path], window_name)
           puts "cd #{result[:path]}" unless tmux_created
 
         rescue WorktreeManager::WorktreeError => e
