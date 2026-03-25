@@ -169,6 +169,7 @@ module Core
       def main_menu
         prompt.select('What would you like to do?', per_page: 12) do |menu|
           menu.choice 'Work on Branch',     :work
+          menu.choice 'Work on My PRs',    :my_prs
           menu.choice 'Clean Worktrees',   :clean
           menu.choice 'Manage Repos  →',    :manage_repos
           menu.choice 'Manage Authors →',   :manage_authors
@@ -237,6 +238,16 @@ module Core
         end
 
         prompt.select(question, choices, **opts)
+      end
+
+      def select_my_prs(prs)
+        choices = prs.map do |pr|
+          draft = pr[:draft] ? ' [DRAFT]' : ''
+          label = "#{pr[:repo]}  ##{pr[:number]}  #{pr[:title]}#{draft}  (#{pr[:branch]})"
+          { name: label, value: pr }
+        end
+
+        prompt.multi_select('Select PRs to work on (Space to select, Enter to confirm):', choices, per_page: 15)
       end
 
       def select_worktree(worktrees, multi: false)

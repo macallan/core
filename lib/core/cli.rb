@@ -16,6 +16,7 @@ require_relative 'commands/list_authors'
 require_relative 'commands/context'
 require_relative 'commands/list_contexts'
 require_relative 'commands/work'
+require_relative 'commands/my_prs'
 require_relative 'commands/rename'
 require_relative 'commands/clean'
 
@@ -32,6 +33,7 @@ module Core
       'context'        => Commands::Context,
       'list-contexts'  => Commands::ListContexts,
       'work'           => Commands::Work,
+      'my-prs'         => Commands::MyPrs,
       'rename'         => Commands::Rename,
       'clean'          => Commands::Clean,
     }.freeze
@@ -91,6 +93,7 @@ module Core
         opts.separator ""
         opts.separator "  Work and review:"
         opts.separator "    work BRANCH               Create/switch to worktree + tmux window for a branch"
+        opts.separator "    my-prs                    Select your open PRs to set up worktrees for"
         opts.separator "    clean                     Select and remove worktrees"
         opts.separator "    rename NEW_NAME            Rename the current tmux window"
         opts.separator "    context PR_NUMBER         Generate/update context file for a PR"
@@ -130,6 +133,7 @@ module Core
         begin
           case choice
           when :work           then interactive_work
+          when :my_prs         then Commands::MyPrs.new(args: [], options: @options).run
           when :clean          then Commands::Clean.new(args: [], options: @options).run
           when :manage_repos   then interactive_manage_repos
           when :manage_authors then interactive_manage_authors
