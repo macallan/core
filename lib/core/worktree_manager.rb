@@ -180,6 +180,53 @@ module Core
       { exists: false, path: worktree_path, branch: branch_name }
     end
 
+    def remove_work(repo, branch_name)
+      worktree_info = find_work_worktree(repo, branch_name)
+      return false unless worktree_info
+
+      worktree_path = worktree_info[:path]
+      main_repo_path = detect_main_repo_path rescue nil
+
+      unless main_repo_path
+        raise WorktreeError, "Could not locate main repository. Please cd to the main repo and try again."
+      end
+
+      Dir.chdir(main_repo_path) do
+        prune_stale_worktrees(main_repo_path)
+
+        begin
+          remove_worktree(worktree_path) if worktree_exists?(worktree_path)
+        rescue WorktreeError => e
+          $stderr.puts "Warning: #{e.message}"
+        end
+
+        # Delete the local branch
+        stdout, stderr, status = Open3.capture3('git', 'rev-parse', '--verify', branch_name)
+        if status.success?
+          Open3.capture3('git', 'branch', '-D', branch_name)
+        end
+      end
+
+      remove_work_worktree_state(repo, branch_name)
+      true
+    end
+
+    def list_all(repo = nil)
+      review = list(repo)
+      work = list_work(repo)
+      { review: review, work: work }
+    end
+
+    def list_work(repo = nil)
+      work_worktrees = @config['work_worktrees'] || {}
+
+      if repo
+        { repo => work_worktrees[repo] || [] }
+      else
+        work_worktrees
+      end
+    end
+
     def find_work_worktree(repo, branch_name)
       return nil unless @config['work_worktrees'] && @config['work_worktrees'][repo]
 
@@ -365,6 +412,15 @@ module Core
 
       @config['worktrees'][repo].reject! { |w| w['pr_number'] == pr_number }
       @config['worktrees'].delete(repo) if @config['worktrees'][repo].empty?
+
+      Config.save(@config)
+    end
+
+    def remove_work_worktree_state(repo, branch_name)
+      return unless @config['work_worktrees'] && @config['work_worktrees'][repo]
+
+      @config['work_worktrees'][repo].reject! { |w| w['branch'] == branch_name }
+      @config['work_worktrees'].delete(repo) if @config['work_worktrees'][repo].empty?
 
       Config.save(@config)
     end

@@ -170,6 +170,7 @@ module Core
           menu.choice 'Work on Branch',     :work
           menu.choice 'Start Review',       :start_review
           menu.choice 'Finish Review',      :finish_review
+          menu.choice 'Clean Worktrees',   :clean
           menu.choice 'Rename Window',      :rename
           menu.choice 'Generate Context',   :context
           menu.choice 'List Contexts',      :list_contexts
@@ -244,7 +245,11 @@ module Core
 
       def select_worktree(worktrees, multi: false)
         choices = worktrees.map do |wt|
-          label = "#{wt['repo']}  PR ##{wt['pr_number']}  (#{wt['branch']})"
+          label = if wt['pr_number']
+            "#{wt['repo']}  PR ##{wt['pr_number']}  (#{wt['branch']})"
+          else
+            "#{wt['repo']}  #{wt['branch']}"
+          end
           { name: label, value: wt }
         end
 
