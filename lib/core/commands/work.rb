@@ -1,3 +1,5 @@
+require 'open3'
+
 module Core
   module Commands
     class Work < Base
@@ -38,6 +40,22 @@ module Core
             puts "Worktree already exists at: #{result[:path]}"
           else
             UI.say_ok("Created worktree at: #{result[:path]}")
+          end
+
+          # Copy .envrc.local from main repo to worktree if it exists
+          main_repo = detect_repo_from_git_toplevel
+          if main_repo
+            envrc_local_src = File.join(main_repo, '.envrc.local')
+            envrc_local_dst = File.join(result[:path], '.envrc.local')
+            if File.exist?(envrc_local_src) && !File.exist?(envrc_local_dst)
+              FileUtils.cp(envrc_local_src, envrc_local_dst)
+            end
+          end
+
+          # Auto-allow direnv in the new worktree if .envrc exists
+          envrc_path = File.join(result[:path], '.envrc')
+          if File.exist?(envrc_path)
+            Open3.capture3('direnv', 'allow', result[:path])
           end
 
           window_name = branch_name.gsub('/', '-')

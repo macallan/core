@@ -30,6 +30,11 @@ module Core
         "#{pr_number}:#{slug}"
       end
 
+      def detect_repo_from_git_toplevel
+        output = `git rev-parse --show-toplevel 2>/dev/null`.strip
+        output.empty? ? nil : output
+      end
+
       def detect_repo_from_git
         output = `git config --get remote.origin.url 2>/dev/null`.strip
         return nil if output.empty?
