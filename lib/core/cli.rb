@@ -15,9 +15,7 @@ require_relative 'commands/remove_author'
 require_relative 'commands/list_authors'
 require_relative 'commands/context'
 require_relative 'commands/list_contexts'
-require_relative 'commands/start_review'
 require_relative 'commands/work'
-require_relative 'commands/finish_review'
 require_relative 'commands/rename'
 require_relative 'commands/clean'
 
@@ -34,8 +32,6 @@ module Core
       'context'        => Commands::Context,
       'list-contexts'  => Commands::ListContexts,
       'work'           => Commands::Work,
-      'start-review'   => Commands::StartReview,
-      'finish-review'  => Commands::FinishReview,
       'rename'         => Commands::Rename,
       'clean'          => Commands::Clean,
     }.freeze
@@ -95,9 +91,7 @@ module Core
         opts.separator ""
         opts.separator "  Work and review:"
         opts.separator "    work BRANCH               Create/switch to worktree + tmux window for a branch"
-        opts.separator "    start-review [PR_NUMBER]  Start reviewing a PR (interactive picker if no number given)"
-        opts.separator "    finish-review [PR_NUMBER] Clean up worktree after finishing review (interactive picker if no number given)"
-        opts.separator "    clean                     Select and remove worktrees (review + work)"
+        opts.separator "    clean                     Select and remove worktrees"
         opts.separator "    rename NEW_NAME            Rename the current tmux window"
         opts.separator "    context PR_NUMBER         Generate/update context file for a PR"
         opts.separator "    list-contexts [REPO]      List all saved PR contexts"
@@ -135,14 +129,8 @@ module Core
 
         begin
           case choice
-          when :list_prs       then Commands::List.new(args: [], options: @options).run
           when :work           then interactive_work
-          when :start_review   then interactive_start_review
-          when :finish_review  then interactive_finish_review
           when :clean          then Commands::Clean.new(args: [], options: @options).run
-          when :rename         then interactive_rename
-          when :context        then interactive_context
-          when :list_contexts  then Commands::ListContexts.new(args: [], options: @options).run
           when :manage_repos   then interactive_manage_repos
           when :manage_authors then interactive_manage_authors
           when :help           then show_help
@@ -164,28 +152,6 @@ module Core
       return unless branch && !branch.strip.empty?
 
       Commands::Work.new(args: [branch], options: @options).run
-    end
-
-    def interactive_start_review
-      Commands::StartReview.new(args: [], options: @options).run
-    end
-
-    def interactive_finish_review
-      Commands::FinishReview.new(args: [], options: @options).run
-    end
-
-    def interactive_context
-      pr = UI.ask('PR number:')&.to_i
-      return unless pr && pr > 0
-
-      Commands::Context.new(args: [pr.to_s], options: @options).run
-    end
-
-    def interactive_rename
-      new_name = UI.ask('New window name:')
-      return unless new_name && !new_name.strip.empty?
-
-      Commands::Rename.new(args: [new_name], options: @options).run
     end
 
     def interactive_manage_repos

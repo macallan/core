@@ -168,14 +168,8 @@ module Core
 
       def main_menu
         prompt.select('What would you like to do?', per_page: 12) do |menu|
-          menu.choice 'List PRs',           :list_prs
           menu.choice 'Work on Branch',     :work
-          menu.choice 'Start Review',       :start_review
-          menu.choice 'Finish Review',      :finish_review
           menu.choice 'Clean Worktrees',   :clean
-          menu.choice 'Rename Window',      :rename
-          menu.choice 'Generate Context',   :context
-          menu.choice 'List Contexts',      :list_contexts
           menu.choice 'Manage Repos  →',    :manage_repos
           menu.choice 'Manage Authors →',   :manage_authors
           menu.choice 'Help',               :help
