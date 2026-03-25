@@ -1,5 +1,7 @@
 module Core
   module UI
+    class EscapePressed < StandardError; end
+
     # Lazy-load TTY gems — degrade to plain text if unavailable
     GEMS_AVAILABLE = begin
       require 'pastel'
@@ -268,12 +270,16 @@ module Core
       end
 
       def prompt
-        @prompt ||= TTY::Prompt.new(
-          symbols: { marker: '›' },
-          active_color: :cyan,
-          help_color: :dim,
-          enable_color: true
-        )
+        @prompt ||= begin
+          p = TTY::Prompt.new(
+            symbols: { marker: '›' },
+            active_color: :cyan,
+            help_color: :dim,
+            enable_color: true
+          )
+          p.on(:keyescape) { raise EscapePressed }
+          p
+        end
       end
     end
   end

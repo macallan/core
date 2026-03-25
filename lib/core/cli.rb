@@ -133,19 +133,23 @@ module Core
       loop do
         choice = UI.main_menu
 
-        case choice
-        when :list_prs       then Commands::List.new(args: [], options: @options).run
-        when :work           then interactive_work
-        when :start_review   then interactive_start_review
-        when :finish_review  then interactive_finish_review
-        when :clean          then Commands::Clean.new(args: [], options: @options).run
-        when :rename         then interactive_rename
-        when :context        then interactive_context
-        when :list_contexts  then Commands::ListContexts.new(args: [], options: @options).run
-        when :manage_repos   then interactive_manage_repos
-        when :manage_authors then interactive_manage_authors
-        when :help           then show_help
-        when :quit           then break
+        begin
+          case choice
+          when :list_prs       then Commands::List.new(args: [], options: @options).run
+          when :work           then interactive_work
+          when :start_review   then interactive_start_review
+          when :finish_review  then interactive_finish_review
+          when :clean          then Commands::Clean.new(args: [], options: @options).run
+          when :rename         then interactive_rename
+          when :context        then interactive_context
+          when :list_contexts  then Commands::ListContexts.new(args: [], options: @options).run
+          when :manage_repos   then interactive_manage_repos
+          when :manage_authors then interactive_manage_authors
+          when :help           then show_help
+          when :quit           then break
+          end
+        rescue UI::EscapePressed
+          next
         end
 
         puts
@@ -201,6 +205,8 @@ module Core
         end
         puts
       end
+    rescue UI::EscapePressed
+      nil
     end
 
     def interactive_manage_authors
@@ -220,6 +226,8 @@ module Core
         end
         puts
       end
+    rescue UI::EscapePressed
+      nil
     end
 
     def show_help(command = nil)
